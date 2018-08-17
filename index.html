@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Web Worker Demo</title>
+    <style type="text/css">
+        #input {
+            width: 0px;
+            height: 0px;
+            overflow: hidden;
+        }
+
+        #input+label {
+            display: inline;
+            color: #f3f3f3;
+            background-color: #777;
+            font-family: sans-serif;
+            padding: 5px;
+            font-size: 2em;
+        }
+
+        #input:focus+label {
+            outline: 5px solid lightblue;
+        }
+
+        #preview {
+            margin-top: 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <input type="file" accept="image/*" name="input" id="input">
+        <label for="input">Choose File</label>
+    </div>
+
+    <canvas id="preview">
+
+    </canvas>
+
+    <script type="text/javascript">
+        const $input = document.getElementById('input');
+        const $preview = document.getElementById('preview');
+        const previewCtx = $preview.getContext('2d');
+        const worker = new Worker('worker.js');
+        worker.addEventListener('message', (d) => {
+            const imageData = d.data;
+            previewCtx.putImageData(imageData, 0, 0);
+
+        });
+
+        // const fileReader = new FileReader();
+        const image = new Image();
+
+        //changes image opacity.
+        function applyFilter() {
+            // const imageData = previewCtx.getImageData(0, 0, image.width, image.height);            
+            const imageData = previewCtx.getImageData(0, 0, $preview.width, $preview.height);
+            worker.postMessage(imageData, [imageData.data.buffer]); //transfers bufffer not the interpretation buffer.
+
+            //previewCtx.putImageData(imageData, 0, 0);
+            //console.log(imageData);
+        }
+
+        // image.addEventListener('load', (e) => {
+        //     $preview.width = image.width;
+        //     $preview.height = image.height;
+        //     previewCtx.drawImage(image, 0, 0);
+        //     applyFilter();
+        //document.body.appendChild(image);
+        // });
+
+        // fileReader.addEventListener('load', (e) => {
+        //     const base64 = e.target.result;
+        //     image.src = base64;
+        // });
+
+        $input.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            // fileReader.readAsDataURL(file); //not a good choice for large files.
+            createImageBitmap(file) //better alternative for loading large files.
+                .then((bitmap) => {
+                    //console.log(bitmap);
+                    $preview.width = bitmap.width;
+                    $preview.height = bitmap.height;
+                    previewCtx.drawImage(bitmap, 0, 0);
+                    applyFilter();
+
+                })
+        });
+    </script>
+</body>
+
+</html>
